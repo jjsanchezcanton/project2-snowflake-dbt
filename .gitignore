@@ -1,0 +1,28 @@
+# venvs
+.venv-dbt/
+.venv-airflow/
+
+# secrets / env
+.env
+profiles.yml
+*.key
+*.pem
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# airflow
+airflow/logs/
+airflow/*.db
+airflow/*.cfg
+airflow/airflow-webserver.pid
+
+# data
+data/
+*.parquet
+
+# python
+__pycache__/
+*.pyc
