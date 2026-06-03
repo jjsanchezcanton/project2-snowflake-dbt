@@ -1,0 +1,8 @@
+snapshots:
+  - name: snap_rate_policy
+    relation: ref('rate_policy')
+    config:
+      schema: marts
+      unique_key: policy_code
+      strategy: check
+      check_cols: [policy_name, amount, currency]

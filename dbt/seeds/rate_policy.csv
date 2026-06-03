@@ -1,0 +1,4 @@
+policy_code,policy_name,amount,currency
+CONGESTION_SURCHARGE,Yellow taxi congestion surcharge,2.75,USD
+MTA_TAX,MTA state tax,0.50,USD
+IMPROVEMENT_SURCHARGE,Taxi improvement surcharge,1.00,USD

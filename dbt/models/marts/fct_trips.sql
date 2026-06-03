@@ -1,3 +1,18 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='trip_key',
+        incremental_strategy='merge',
+        on_schema_change='append_new_columns'
+    )
+}}
+
+with trips as (
+
+    select * from {{ ref('int_trips_enriched') }}
+
+)
+
 select
     trip_key,
 
@@ -29,4 +44,9 @@ select
     airport_fee,
     total_amount
 
-from {{ ref('int_trips_enriched') }}
+from trips
+
+{% if is_incremental() %}
+-- only process trips newer than what's already loaded (watermark)
+where pickup_at > (select max(pickup_at) from {{ this }})
+{% endif %}
