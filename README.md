@@ -4,6 +4,9 @@ End-to-end analytics-engineering pipeline on **Snowflake**, modelled with **dbt*
 
 **Live dbt docs (lineage graph):** https://jjsanchezcanton.github.io/project2-snowflake-dbt/
 
+![dbt docs lineage graph for the NYC TLC pipeline](docs/images/dbt_docs_lineage.png)
+*Model lineage from the published dbt docs site: RAW → staging → intermediate → star-schema marts, plus the SCD2 snapshot.*
+
 This is **Project 2** of a four-part portfolio that implements the *same* business problem (a NYC taxi analytics pipeline: ingest → clean → model → serve) across four different stacks, so the engineering trade-offs between platforms can be compared directly rather than in the abstract.
 
 - **Project 1 — GCP + Databricks (Delta Lake):** [`project1-gcp-databricks`](https://github.com/jjsanchezcanton/project1-gcp-databricks)
@@ -40,6 +43,11 @@ flowchart TD
 ```
 
 **Star schema grain:** `fct_trips` = one cleaned taxi trip, with foreign keys to every `dim_*`. Measures: fare, tip, tolls, surcharges, total, distance, duration.
+
+**Orchestration in Airflow (Cosmos):**
+
+![Airflow Graph view showing the Cosmos task group running green](docs/images/airflow_dag.png)
+*The `nyc_tlc_snowflake_dbt` DAG in Airflow 3.2 — `load_raw` followed by each dbt seed, model, snapshot and test rendered as an individual task by Cosmos.*
 
 ## Results
 
@@ -83,6 +91,7 @@ project2-snowflake-dbt/
 │   └── tests/                     # singular tests
 ├── airflow/dags/                  # Cosmos DbtTaskGroup DAG
 ├── .github/workflows/             # ci.yml (PR), docs.yml (Pages)
+├── docs/images/                   # README screenshots
 └── .env.example                   # env var template (no secrets)
 ```
 
@@ -97,6 +106,9 @@ A few choices made deliberately, with the trade-off behind each:
 - **Honest SCD2 dimension.** `rate_policy` (the congestion / MTA / improvement surcharges) is snapshotted with the `check` strategy — a dimension that genuinely changes over time, rather than a synthetic one invented to demonstrate the mechanic.
 - **Explicit schema routing.** A `generate_schema_name` override lands models in clean schemas (`STAGING`, `MARTS`) instead of dbt's default target-prefixed names.
 - **Cosmos LOCAL mode over VIRTUALENV.** dbt runs in LOCAL execution mode pointing at a dbt executable, reusing the installed environment rather than rebuilding a virtualenv per task — faster, with the dbt project's packages resolved project-locally.
+
+![Snowsight query showing two SCD2 versions of the congestion surcharge](docs/images/snowflake_scd2.png)
+*SCD2 history captured by the `snap_rate_policy` snapshot: after a simulated policy change, the congestion surcharge has a closed historical version (`valid_to` set) and a current one (`valid_to` null).*
 
 ## Data-quality finding: `total_amount` reconciliation
 
@@ -146,6 +158,9 @@ Authentication uses a Snowflake RSA key pair; the private key and its passphrase
 
 - **`ci.yml`** (on pull request): installs dbt, runs `dbt deps` + `dbt parse` with dummy credentials. Validates that the project parses and all refs/sources resolve — without connecting to Snowflake, so PRs cost nothing.
 - **`docs.yml`** (on push to `main`): authenticates with the Snowflake key-pair (GitHub secrets), runs `dbt docs generate`, and publishes the documentation site — including the lineage graph — to GitHub Pages.
+
+![GitHub Actions workflows passing](docs/images/github_actions_ci.png)
+*The CI (`dbt parse`) and docs-publish workflows passing in GitHub Actions.*
 
 ## Status
 
