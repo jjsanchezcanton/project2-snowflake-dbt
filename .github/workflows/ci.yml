@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dbt-validate:
+    name: dbt parse (no warehouse)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dbt
+    env:
+      # Dummy values so env_var() resolves during parse.
+      # dbt parse does NOT open a Snowflake connection, so no warehouse is touched.
+      SNOWFLAKE_ACCOUNT: ci-dummy
+      SNOWFLAKE_USER: ci
+      SNOWFLAKE_ROLE: ci
+      SNOWFLAKE_WAREHOUSE: ci
+      SNOWFLAKE_DATABASE: ci
+      SNOWFLAKE_PRIVATE_KEY_FILE: /tmp/dummy_key.p8
+      SNOWFLAKE_PRIVATE_KEY_FILE_PWD: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dbt-snowflake
+        run: pip install "dbt-snowflake~=1.11"
+
+      - name: Set up dbt profile + dummy key
+        run: |
+          mkdir -p ~/.dbt
+          cp profiles.example.yml ~/.dbt/profiles.yml
+          echo "dummy" > /tmp/dummy_key.p8
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt parse
+        run: dbt parse
